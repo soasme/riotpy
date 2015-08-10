@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import urwid
+from riot.layout import render_layout
 
 def test_text_tag():
     el = render_layout(['text', {
@@ -9,7 +9,6 @@ def test_text_tag():
     }, 'Hello World'])
     assert el
     assert el.uuid
-    assert str(el) == "<Text flow widget 'Hello World' align='right' wrap='any'>"
     assert el.text == 'Hello World'
 
 def test_text_tag_with_opts_ref():
