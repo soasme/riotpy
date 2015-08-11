@@ -3,7 +3,7 @@
 import re
 from uuid import uuid4
 from urwid import (
-    Text,
+    Text, Divider
 )
 
 def get_attribute(render_data, variable):
@@ -38,8 +38,17 @@ def render_text_layout(attributes, text, opts, ref):
     text.uuid = uuid4()
     return text
 
+def render_div_layout(attributes, text, opts, ref):
+    div_char = attributes.get('char', u' ')
+    top = int(attributes.get('top', 0))
+    bottom = int(attributes.get('bottom', 0))
+    div = Divider(div_char, top, bottom)
+    div.uuid = uuid4()
+    return div
+
 RENDERERS = {
-    'text': render_text_layout
+    'text': render_text_layout,
+    'div': render_div_layout,
 }
 
 def render_layout(layout, opts={}, ref={}):
