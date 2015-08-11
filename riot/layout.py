@@ -34,17 +34,13 @@ def render_text_layout(attributes, text, opts, ref):
         markup = [render_template(tpl, render_data) for tpl in text if tpl]
     elif isinstance(text, tuple):
         markup = render_template(text[1], render_data)
-    text = Text(markup, align=align, wrap=wrap)
-    text.uuid = uuid4()
-    return text
+    return Text(markup, align=align, wrap=wrap)
 
 def render_div_layout(attributes, text, opts, ref):
     div_char = attributes.get('char', u' ')
     top = int(attributes.get('top', 0))
     bottom = int(attributes.get('bottom', 0))
-    div = Divider(div_char, top, bottom)
-    div.uuid = uuid4()
-    return div
+    return Divider(div_char, top, bottom)
 
 RENDERERS = {
     'text': render_text_layout,
@@ -53,5 +49,7 @@ RENDERERS = {
 
 def render_layout(layout, opts={}, ref={}):
     tag_name, attributes, children = layout
-    return RENDERERS[tag_name](attributes, children, opts, ref)
+    el = RENDERERS[tag_name](attributes, children, opts, ref)
+    el.uuid = uuid4()
+    return el
 
