@@ -71,7 +71,7 @@ def test_update_layout(layout):
         ('set_text', 'world updated'),
     ]
 
-def test_no_change(layout):
+def test_update_layout_no_change(layout):
     el = [
         'text',
         {
@@ -81,3 +81,43 @@ def test_no_change(layout):
     el_, patch = update_layout(el, layout)
     assert el == el_
     assert patch == []
+
+def test_update_layout_by_opts(layout):
+    modified = deepcopy(layout)
+    modified[2] = '{ opts.title }'
+    el = [
+        'text',
+        {
+            'markup': 'hello world',
+        }
+    ]
+    el, patch = update_layout(el, layout, {'title': 'world updated'})
+    assert el == [
+        'text',
+        {
+            'markup': 'world updated',
+        }
+    ]
+    assert patch == [
+        ('set_text', 'world updated'),
+    ]
+
+def test_update_layout_by_self(layout):
+    modified = deepcopy(layout)
+    modified[2] = '{ title }'
+    el = [
+        'text',
+        {
+            'markup': 'hello world',
+        }
+    ]
+    el, patch = update_layout(el, layout, {}, {'title': 'world updated'})
+    assert el == [
+        'text',
+        {
+            'markup': 'world updated',
+        }
+    ]
+    assert patch == [
+        ('set_text', 'world updated'),
+    ]

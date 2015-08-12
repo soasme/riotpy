@@ -10,20 +10,18 @@ def test_mount_tag_to_root():
     }
     opts = {}
     root = {}
-    g = {}
-    tag = mount_tag_to_root(g, root, impl, opts)
-    assert g[tag['uuid']] # ref to a ui library instance
+    g = {'instances': {}, 'attrs': {}}
+    tag = mount_tag_to_root(g, impl, opts)
+    assert g['instances'][tag['uuid']] # ref to a ui library instance
     assert tag == {
         'uuid': ANY,
-        'self': ANY, # an observable object, logic mount to self
         'impl': impl,
-        'opts': opts, # an observable object
+        'opts': opts,
         'root': root,
         'parent': None,
         'tags': [
             {
                 'uuid': ANY,
-                'self': ANY,
                 'impl': ANY, # built-in impl
                 'opts': opts,
                 'root': root,
@@ -32,4 +30,5 @@ def test_mount_tag_to_root():
             }
         ],
     }
-    assert g[tag['tags'][0]] # ref to ui library text instance
+    assert g['instances'][tag['tags'][0]] # ref to ui library text instance
+
