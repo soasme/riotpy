@@ -54,9 +54,15 @@ def patch_text_layout(el1, el2):
         yield ('set_wrap_mode', el2[1].get('wrap', 'space'))
 
 def render_div_layout(attributes, text, opts, ref):
+    render_data = dict(ref)
+    render_data['opts'] = deepcopy(opts)
+    render_data['opts'].update(attributes)
     div_char = attributes.get('char', u' ')
-    top = attributes.get('top', 0)
-    bottom = attributes.get('bottom', 0)
+    div_char = render_template(div_char, render_data)
+    top = str(attributes.get('top', 0))
+    top = int(render_template(top, render_data))
+    bottom = str(attributes.get('bottom', 0))
+    bottom = int(render_template(bottom, render_data))
     return [
         'div',
         {
