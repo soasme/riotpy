@@ -55,9 +55,25 @@ def patch_text_layout(el1, el2):
 
 def render_div_layout(attributes, text, opts, ref):
     div_char = attributes.get('char', u' ')
-    top = int(attributes.get('top', 0))
-    bottom = int(attributes.get('bottom', 0))
+    top = attributes.get('top', 0)
+    bottom = attributes.get('bottom', 0)
+    return [
+        'div',
+        {
+            'div_char': div_char,
+            'top': top,
+            'bottom': bottom,
+        }
+    ]
     return Divider(div_char, top, bottom)
+
+def patch_div_layout(el1, el2):
+    if el1[1].get('div_char', u' ') != el2[1].get('div_char', u' '):
+        yield ('.div_char', el2[1].get('div_char', u' '))
+    if el1[1].get('top', 0) != el2[1].get('top', 0):
+        yield ('.top', el2[1].get('top', 0))
+    if el1[1].get('bottom', 0) != el2[1].get('bottom', 0):
+        yield ('.bottom', el2[1].get('bottom', 0))
 
 RENDERERS = {
     'text': render_text_layout,
@@ -66,6 +82,7 @@ RENDERERS = {
 
 PATCHERS = {
     'text': patch_text_layout,
+    'div': patch_div_layout,
 }
 
 def render_layout(layout, opts={}, ref={}):
