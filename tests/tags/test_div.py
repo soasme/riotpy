@@ -14,6 +14,26 @@ def test_render_div():
         }
     ]
 
+def test_render_div_with_opts():
+    assert render_layout([
+        'div', {
+            'char': '{ opts.custom_char }',
+            'top': '{ opts.custom_top }',
+            'bottom': '{ opts.custom_bottom }',
+        }, []
+    ], {
+        'custom_char': u'x',
+        'custom_top': '1',
+        'custom_bottom': '1',
+    }) == [
+        'div',
+        {
+            'div_char': u'x',
+            'top': 1,
+            'bottom': 1,
+        }
+    ]
+
 def test_render_div_with_div_char():
     el = render_layout([
         'div', {
