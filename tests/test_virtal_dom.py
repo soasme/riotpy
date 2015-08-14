@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 
+def test_mount_tag():
+    pass
+
 def test_mount_tag_to_root():
     impl = {
         'name': 'tag',
