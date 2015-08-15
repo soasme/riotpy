@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import urwid
-import riot.tags.text as text
+from riot.tags.tags import parse_tag_from_string
 
-txt = text.parse_tag_from_string('<text>Hello World</text>')
-fill = urwid.Filler(txt, 'top')
+fill = parse_tag_from_string('<filler valign="top"><text>hello world!</text></filler>')
 loop = urwid.MainLoop(fill)
 loop.run()
