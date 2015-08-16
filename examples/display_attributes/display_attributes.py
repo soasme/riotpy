@@ -10,7 +10,9 @@ def exit_on_q(key):
 string = '''
 <filler class="bg">
   <text class="streak" align="center">
+    <span>hello world</span>
     <span class="banner">Hello World</span>
+    hello world
   </text>
 </filler>
 '''
