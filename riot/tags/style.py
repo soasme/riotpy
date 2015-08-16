@@ -4,10 +4,9 @@ def parse_style(string):
     styles_string = string.replace('\n', '')
     styles_string = styles_string.replace('}', '}\n')
     styles_lines = styles_string.split('\n')
-    styles_lines = [_ for _ in styles_lines if _]
+    styles_lines = [_.strip() for _ in styles_lines if _.strip()]
     styles = []
     for style_line in styles_lines:
-        style_line = style_line.strip()
         assert style_line.startswith('.'), 'Only support class selector.'
         style_name = style_line[1:style_line.index('{')].strip()
         rules = style_line[style_line.index('{') + 1:-1]
