@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from riot.tags.tags import parse_tag_from_string
+from riot.tags.style import parse_style
 from riot.app import run_tag, quit_app
 
 def exit_on_q(key):
@@ -15,13 +16,22 @@ string = '''
 </filler>
 '''
 
-import urwid
+style = '''
+.banner {
+  foreground: black;
+  background: light gray;
+}
+.streak {
+  foreground: black;
+  background: dark red;
+}
+.bg {
+  foreground: black;
+  background: dark blue;
+}
+'''
 
-palette = [
-    ('banner', 'black', 'light gray'),
-    ('streak', 'black', 'dark red'),
-    ('bg', 'black', 'dark blue'),]
-
-map3 = parse_tag_from_string(string)
-loop = urwid.MainLoop(map3, palette, unhandled_input=exit_on_q)
-loop.run()
+run_tag(
+    parse_tag_from_string(string), parse_style(style),
+    unhandled_input=exit_on_q
+)
