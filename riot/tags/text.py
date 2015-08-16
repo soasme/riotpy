@@ -13,7 +13,7 @@ def parse_markup(node):
     rs = []
     for _node in PyQuery(node).contents():
         if isinstance(_node, str):
-            rs.append(_node)
+            rs.append(_node.strip())
         elif _node.tag == 'span':
             class_name = _node.get('class', '')
             span_markup = parse_markup(_node)
