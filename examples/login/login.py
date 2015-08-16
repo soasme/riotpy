@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from riotpy import Observable, Riot
+from riotpy import Observable, riot_open
 
 auth = Observable('auth')
 
@@ -11,8 +11,5 @@ def login(username, password):
     else:
         auth.trigger('login.fail', {'msg': u'Wrong password'})
 
-app = Riot(__name__, './index.tag')
-app.mount('login', auth)
-
 if __name__ == '__main__':
-    app.run(debug=True)
+    riot_open('./index.tag', auth)

@@ -1,10 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from riotpy import Observable, Riot
+from riotpy import riot_open
 
-app = Riot(__name__, './index.tag')
-app.mount('tick')
-
-if __name__ == '__main__':
-    app.run(debug=True)
+riot_open('./index.tag')
 
