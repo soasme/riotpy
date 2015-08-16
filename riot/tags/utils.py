@@ -15,6 +15,7 @@ def detect_class(f):
         class_names = class_name.split(' ')
         node = f(*args, **kwargs)
         for class_name in class_names:
-            node = AttrMap(node, class_name)
+            if class_name:
+                node = AttrMap(node, class_name)
         return node
     return _detect_class
