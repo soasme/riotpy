@@ -13,10 +13,10 @@ def parse_style(string):
         rules = [rule.strip().replace(';', '').split(':') for rule in rules.split(';')]
         rules = [rule for rule in rules if rule and len(rule) == 2]
         rules = {k.strip(): v.strip() for k, v in rules}
-        foreground = rules.get('foreground', 'default')
-        background = rules.get('background', 'default')
+        foreground = rules.get('foreground', '')
+        background = rules.get('background', '')
         mono = rules.get('mono')
-        foreground_high = rules.get('foreground-height')
-        background_high = rules.get('background-height')
+        foreground_high = rules.get('foreground-high')
+        background_high = rules.get('background-high')
         styles.append((style_name, foreground, background, mono, foreground_high, background_high))
     return styles
