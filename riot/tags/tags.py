@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import re
+import uuid
 
 from pyquery import PyQuery
 
@@ -12,10 +13,16 @@ convert_to_node = convert_string_to_node
 def parse_tag_from_string(string):
     return parse_tag_from_node(convert_string_to_node(string))
 
+def set_riot_attr(node, key, value):
+    node.attr['__riot_%s__' % key] == str(value)
+
+def get_riot_attr(node, key):
+    return node.attr['__riot_%s__' % key]
+
 @detect_class
 def parse_tag_from_node(node):
     tagname = node[0].tag
-    is_mounted = node.attr.__riot_is_mounted__ == "true"
+    is_mounted = get_riot_attr(node, 'is_mounted') == 'true'
     if is_mounted:
         return parse_tag_from_node(convert_to_node(node.children()))
     if tagname == 'text':
@@ -35,6 +42,6 @@ def parse_tag_from_node(node):
 
 def riot_mount(dom, selector, node, mount_args={}):
     pq = dom(selector)
-    pq.attr.__riot_is_mounted__ = 'true'
+    set_riot_attr(pq, 'is_mounted', 'true')
     pq.html(node.html())
     return dom
