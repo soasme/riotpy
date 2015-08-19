@@ -30,7 +30,8 @@ def new_dom(impl, root, opts, inner_html):
     return tag
 
 def mount_dom(root, dom):
-    root.html(dom.impl)
+    inner = dom.impl.get('html')
+    root.html(inner)
 
 def pop_html(root):
     inner_html = root.html() or ''
@@ -56,15 +57,15 @@ def mount_tag(root, tag, opts):
 
 def mount(root, selector, tagname='', opts=None):
     elements = root(selector)
-    tags = []
+    doms = []
     for element in elements:
         node = PyQuery(element)
         tagname = tagname or element.name
         node.__riot_tag__ = tagname
         tag = get_tag(tagname)
-        dom = mount_to(node, tag, opts or {})
-        tags.append(dom)
-    return tags
+        dom = mount_tag(node, tag, opts or {})
+        doms.append(dom)
+    return doms
 
 def update():
     for tag in VDOM:

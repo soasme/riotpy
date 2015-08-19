@@ -31,8 +31,14 @@ def test_cache_dom():
 
 def test_mount_tag():
     root = PyQuery('<root></root>')
-    tag = '<custom>hello world</custom>'
+    tag = {'html': '<custom>hello world</custom>'}
     dom = vdom.mount_tag(root, tag, {})
     assert dom and dom.uuid # dom created
     assert vdom.get_dom(dom.uuid) # dom cached
     assert root.html() # mounted something
+
+def test_mount():
+    root = PyQuery('<body><div id="selector"><selected></body>')
+    vdom.define_tag('test', '<test>abc</test>', lambda: None)
+    doms = vdom.mount(root, '#selector', 'test')
+    assert doms
