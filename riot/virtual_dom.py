@@ -1,13 +1,25 @@
 # -*- coding: utf-8 -*-
 
+from functools import partial
 from uuid import uuid4
 from pyquery import PyQuery
 from .observable import Observable
 
-TAG_IMPL = {}
+TAGS = {}
 VDOM = {}
 
-def new_tag(impl, root, opts, inner_html):
+def define_tag(name, html, fn):
+    TAGS[name] = dict(
+        name=name,
+        html=html,
+        fn=fn
+    )
+    return TAGS[name]
+
+def get_tag(name):
+    return TAGS[name]
+
+def new_dom(impl, root, opts, inner_html):
     tag = Observable()
     tag.uuid = uuid4()
     tag.impl = impl
@@ -17,31 +29,30 @@ def new_tag(impl, root, opts, inner_html):
     }
     return tag
 
+def mount_dom(dom):
+    pass
+
 def pop_html(root):
     inner_html = root.html() or ''
     root.html('')
     return inner_html
 
-def mount_tag(tag):
-    pass
+def cache_dom(dom):
+    VDOM[dom.uuid] = dom
+    callback = lambda: expire_dom(dom.uuid)
+    dom.on('unmounted', callback)
 
-def mount_to(root, layout, opts):
-    tag = new_tag(layout, root, opts, pop_html(root))
-    mount_tag(tag)
-    VDOM[tag.uuid] = tag
-    tag.on('unmounted', lambda: VDOM.__delitem__(tag.uuid)) # del VDOM[tag.uuid]
-    return tag
+def get_dom(uuid):
+    return VDOM[uuid]
 
-def register_layout(name, html, fn):
-    TAG_IMPL[name] = dict(
-        name=name,
-        html=html,
-        fn=fn,
-    )
-    return name
+def expire_dom(uuid):
+    del VDOM[uuid]
 
-def get_layout(name):
-    return TAG_IMPL[name]
+def mount_tag(root, tag, opts):
+    dom = new_dom(tag, root, opts, pop_html(root))
+    mount_dom(dom)
+    cache_dom(dom)
+    return dom
 
 def mount(root, selector, tagname='', opts=None):
     elements = root(selector)
@@ -50,7 +61,11 @@ def mount(root, selector, tagname='', opts=None):
         node = PyQuery(element)
         tagname = tagname or element.name
         node.__riot_tag__ = tagname
-        layout = get_layout(tagname)
-        tag = mount_to(node, layout, opts or {})
-        tags.append(tag)
+        tag = get_tag(tagname)
+        dom = mount_to(node, tag, opts or {})
+        tags.append(dom)
     return tags
+
+def update():
+    for tag in VDOM:
+        tag.update()
