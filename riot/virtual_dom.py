@@ -29,8 +29,8 @@ def new_dom(impl, root, opts, inner_html):
     }
     return tag
 
-def mount_dom(dom):
-    pass
+def mount_dom(root, dom):
+    root.html(dom.impl)
 
 def pop_html(root):
     inner_html = root.html() or ''
@@ -50,7 +50,7 @@ def expire_dom(uuid):
 
 def mount_tag(root, tag, opts):
     dom = new_dom(tag, root, opts, pop_html(root))
-    mount_dom(dom)
+    mount_dom(root, dom)
     cache_dom(dom)
     return dom
 
