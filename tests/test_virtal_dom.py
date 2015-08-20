@@ -7,7 +7,7 @@ from riot import virtual_dom as vdom
 from riot.observable import Observable
 
 def test_defind_and_get_tag():
-    callback = lambda: None
+    callback = lambda *a, **kw: None
     vdom.define_tag('test', '<test></test>', callback)
     assert vdom.get_tag('test') == {
         'name': 'test',
@@ -39,6 +39,14 @@ def test_mount_tag():
 
 def test_mount():
     root = PyQuery('<body><div id="selector"><selected></body>')
-    vdom.define_tag('test', '<test>abc</test>', lambda: None)
+    vdom.define_tag('test', '<test>abc</test>', lambda *a, **kw: None)
     doms = vdom.mount(root, '#selector', 'test')
     assert doms
+
+def test_walk():
+    root = PyQuery('<root><child><grandson></grandson></child></root>')
+    def fn(node):
+        node.addClass('walked')
+        return True
+    vdom.walk(root, fn)
+    assert str(root) == '<root class="walked"><child class="walked"><grandson class="walked"/></child></root>'
