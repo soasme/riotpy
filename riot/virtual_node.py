@@ -12,6 +12,7 @@ def new_node(impl, inner, **kwargs):
     node.inner = inner
     node.children = []
     node.expressions = []
+    node.opts = kwargs.get('opts') or {}
     node.root = kwargs.get('root')
     node.parent = kwargs.get('parent')
     node.dom = make_dom(node)

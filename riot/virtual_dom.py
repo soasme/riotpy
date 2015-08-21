@@ -43,7 +43,7 @@ def expire_dom(uuid):
     del VDOM[uuid]
 
 def mount_tag(root, tag, opts):
-    node = new_node(tag, root, opts, pop_html(root))
+    node = new_node(tag, pop_html(root), root=root, opts=opts)
     node.mount()
     cache_dom(node)
     return node
