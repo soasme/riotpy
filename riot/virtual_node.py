@@ -29,7 +29,7 @@ def mount_children_nodes(node):
         mount_node(child)
     if node.parent:
         node.parent\
-            .on('update', node.update)
+            .on('update', node.update)\
             .on('unmount', node.unmount)
 
 def unmount_children_nodes(node):
@@ -37,12 +37,12 @@ def unmount_children_nodes(node):
         unmount_node(child)
     if node.parent:
         node.parent\
-            .off('update', node.update)
+            .off('update', node.update)\
             .off('unmount', node.unmount)
 
 def unmount_node(node):
     root_parent = node.root.parent()
-    node_parent.html('')
+    root_parent.html('')
     node.trigger('unmount')
     unmount_children_nodes(node)
     node.off_all()
