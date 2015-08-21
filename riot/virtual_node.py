@@ -1,9 +1,12 @@
 # -*- coding: utf-8 -*-
 
 from uuid import uuid4
+from urwid import WidgetDecoration, SolidFill, Filler, Text
+from pyquery import PyQuery
 from .observable import Observable
 from .expression import update_expressions, parse_expressions
 from .template import render_template
+from .parse import extract_logic, attach_logic_to_node
 
 def new_node(impl, inner, **kwargs):
     node = Observable()
@@ -12,7 +15,7 @@ def new_node(impl, inner, **kwargs):
     node.inner = inner
     node.children = []
     node.expressions = []
-    node.opts = kwargs.get('opts') or {}
+    node.opts = dict(kwargs.get('opts') or {})
     node.root = kwargs.get('root')
     node.parent = kwargs.get('parent')
     node.dom = make_dom(node)
@@ -21,7 +24,7 @@ def new_node(impl, inner, **kwargs):
     node.unmount = lambda: unmount_node(node)
     return node
 
-def new_child_node(impl, dom, parent):
+def new_child_node(impl, dom, root):
     node = new_node(impl, dom.html())
     return node
 
@@ -61,15 +64,12 @@ def normalize_data(data):
     return data
 
 def render_opts(node):
-    opts = {}
-    for attribute, value in node[0].attrib.items():
-        opts[attribute] = render_template(value, node)
-    return opts
+    return node.opts
 
 def extend_node(node, data):
     node.opts = render_opts(node)
     for key, value in data.items():
-        setattr(self, key, value)
+        setattr(node, key, value)
 
 def update_node(node, data):
     inherit_from_parent(node)
@@ -84,19 +84,22 @@ def make_dom(node):
     return PyQuery(node.impl.get('html'))
 
 def mount_node(node):
+    from .tags.tags import parse_tag_from_node
     node.opts = render_opts(node)
-    node.impl.get('fn')(node, node.opts)
-    parse_expressions(node)
+    node.ui = parse_tag_from_node(node.dom.children().eq(0))
+    logic = extract_logic(node.impl.get('html'))
+    attach_logic_to_node(logic, node, node.opts)
     mount_children_nodes(node)
-    _ = node.root and parse_expressions(node.root, node, node.expressions)
+    _ = node.root and parse_expressions(node.expressions, node)
     node.trigger('premount')
-    dom = make_dom(node)
+    node.update(node.opts)
+    node.root.html(node.dom.html())
 
     if not node.parent or node.parent.is_mounted:
         node.is_mounted = True
         node.trigger('mount')
     else:
-        @node.parent.on('mount')
-        def _():
+        def on_parent_mounted():
             node.parent.is_mounted = node.is_mounted = True
             node.trigger('mount')
+        node.parent.on('mount', on_parent_mounted)
