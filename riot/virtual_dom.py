@@ -17,11 +17,10 @@ def pop_html(root):
     root.html('')
     return inner_html
 
-def define_tag(name, html, fn):
+def define_tag(name, html):
     TAGS[name] = dict(
         name=name,
         html=html,
-        fn=fn
     )
     return TAGS[name]
 
@@ -54,10 +53,11 @@ def mount(root, selector, tagname='', opts=None):
     for element in elements:
         node = PyQuery(element)
         tagname = tagname or element.name
-        node.__riot_tag__ = tagname
         tag = get_tag(tagname)
-        dom = mount_tag(node, tag, opts or {})
-        doms.append(dom)
+        vnode = mount_tag(node, tag, opts or {})
+        node.attr['__riot_tag__'] = tagname
+        node.attr['__riot_uuid__'] = vnode.uuid.hex
+        doms.append(vnode)
     return doms
 
 def update():
