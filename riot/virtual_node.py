@@ -25,7 +25,7 @@ def new_node(impl, inner, **kwargs):
     return node
 
 def new_child_node(impl, dom, root):
-    node = new_node(impl, dom.html())
+    node = new_node(impl, dom.html(), )
     return node
 
 def mount_children_nodes(node):
