@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 
 import re
-from uuid import uuid4
+from uuid import uuid4, UUID
 from pyquery import PyQuery
 
 from . import text, filler, div, pile, solidfill, edit
 from ..observable import Observable
+from ..virtual_dom import get_dom
 from .utils import convert_string_to_node, detect_class
 
 convert_to_node = convert_string_to_node
@@ -16,9 +17,9 @@ def parse_tag_from_string(string):
 @detect_class
 def parse_tag_from_node(node):
     tagname = node[0].tag
-    is_mounted = node.attr.__riot_is_mounted__ == "true"
-    if is_mounted:
-        return parse_tag_from_node(convert_to_node(node.children()))
+    uuid = node.attr.__riot_uuid__
+    if uuid:
+        return get_dom(UUID(uuid)).ui
     if tagname == 'text':
         return text.parse_tag_from_node(node)
     elif tagname == 'filler':
@@ -33,10 +34,4 @@ def parse_tag_from_node(node):
         return edit.parse_tag_from_node(node)
     else:
         raise NotImplementedError(tagname)
-
-def riot_mount(dom, selector, node, mount_args={}):
-    pq = dom(selector)
-    pq.attr.__riot_is_mounted__ = 'true'
-    pq.html(node.html())
-    return dom
 
