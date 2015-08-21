@@ -33,6 +33,11 @@ class Observable(object):
             return _on_wrapper(*handlers)
         return _on_wrapper
 
+    def off_all(self):
+        events = list(self.events)
+        for event in events:
+            self.off(event)
+
     def off(self, event=None, *handlers):
         """unregister an event or handler from an event"""
 
