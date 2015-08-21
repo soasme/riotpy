@@ -8,4 +8,5 @@ def parse_tag_from_node(node):
     valign = node.attr.valign or 'middle'
     children = node.children()
     assert len(children) == 1, 'Filler can only have one child.'
-    return Filler(tags.parse_tag_from_node(PyQuery(children[0])), valign)
+    filler = Filler(tags.parse_tag_from_node(PyQuery(children[0])), valign)
+    return filler
