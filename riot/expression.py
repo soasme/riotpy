@@ -47,12 +47,14 @@ def update_expressions(expressions, node):
         if expression.get('value') == value:
             continue
 
+        # text
         expression['value'] = value
         if attr == 'inner_html':
             dom.html(value)
             markup = parse_markup(value) or ''
             getattr(ui, TEXT_META['attribute_methods']['inner_html'])(markup)
             continue
+
         dom.attr[attr] = ''
         if callable(value):
             origin_callback = getattr(node.ui, attr)
