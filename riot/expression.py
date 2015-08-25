@@ -58,13 +58,15 @@ def update_expressions(expressions, node):
 
         if attr == 'onclick' and callable(value):
             if '_sig_on_click' in ui.__dict__:
-                urwid.disconnect_by_key(ui, 'click', ui.__dict__['_sig_on_click'])
+                key = ui.__dict__.pop('_sig_on_click')
+                urwid.disconnect_by_key(ui, 'click', key)
             ui.__dict__['_sig_on_click'] = urwid.connect_signal(ui, 'click', value)
             continue
 
         if attr == 'onchange' and callable(value):
             if '_sig_on_change' in ui.__dict__:
-                urwid.disconnect_by_key(ui, 'change', ui.__dict__['_sig_on_change'])
+                key = ui.__dict__.pop('_sig_on_change')
+                urwid.disconnect_by_key(ui, 'change', key)
             ui.__dict__['_sig_on_change'] = urwid.connect_signal(ui, 'change', value)
             continue
 
