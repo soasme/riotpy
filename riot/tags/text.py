@@ -13,15 +13,19 @@ def parse_markup(node):
     rs = []
     for _node in PyQuery(node).contents():
         if isinstance(_node, str):
-            rs.append(_node.strip())
+            rs.append(_node)
         elif _node.tag == 'span':
-            class_name = _node.get('class', '')
-            if_ = _node.get('if', '')
-            if if_ == 'False':
+            if_ = _node.get('if', 'True')
+            if if_ == '':
                 continue
+            class_name = _node.get('class', '')
             span_markup = parse_markup(_node)
             markup = (class_name, span_markup) if class_name else span_markup
             rs.append(markup)
+    if len(rs) == 1 and isinstance(rs[0], basestring):
+        return rs[0]
+    if not rs:
+        return ''
     return rs
 
 def parse_tag_from_node(node):
