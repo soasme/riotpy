@@ -16,6 +16,9 @@ def parse_markup(node):
             rs.append(_node.strip())
         elif _node.tag == 'span':
             class_name = _node.get('class', '')
+            if_ = _node.get('if', '')
+            if if_ == 'False':
+                continue
             span_markup = parse_markup(_node)
             markup = (class_name, span_markup) if class_name else span_markup
             rs.append(markup)
