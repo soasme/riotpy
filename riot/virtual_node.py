@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from uuid import uuid4
-from urwid import WidgetDecoration, SolidFill, Filler, Text
+from urwid import WidgetDecoration, SolidFill, Filler, Text, ExitMainLoop
 from pyquery import PyQuery
 from .observable import Observable
 from .expression import update_expressions, parse_expressions
@@ -19,6 +19,7 @@ def new_node(impl, inner, **kwargs):
     node.root = kwargs.get('root')
     node.parent = kwargs.get('parent')
     node.dom = make_dom(node)
+    node.exit = quit
     node.update = lambda data: update_node(node, data)
     node.mount = lambda: mount_node(node)
     node.unmount = lambda: unmount_node(node)
@@ -27,6 +28,9 @@ def new_node(impl, inner, **kwargs):
 def new_child_node(impl, dom, root):
     node = new_node(impl, dom.html(), )
     return node
+
+def quit(*args, **kwargs):
+    raise ExitMainLoop()
 
 def mount_children_nodes(node):
     for child in node.children:

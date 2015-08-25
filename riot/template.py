@@ -30,6 +30,7 @@ def render_template(text, render_data):
 
     expr = text[1:-1]
     return env.compile_expression(expr)(**vars(render_data))
+
     variables = variable_re.findall(text)
     variables = {var[1:-1].strip(): var for var in variables}
     for variable in variables:
