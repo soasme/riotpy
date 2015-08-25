@@ -2,7 +2,7 @@
 
 import sys
 from .template import render_template
-from .utils import walk
+from .utils import walk, get_ui_by_path
 
 NODES = {}
 
@@ -19,23 +19,25 @@ def add_expression(expressions, dom, val, extra={}):
         expression.update(extra or {})
         expressions.append(expression)
 
-def parse_node(expressions, root, node):
+def parse_node(expressions, root, node, path):
     from .virtual_dom import is_tag_defined
     if node[0].tag == 'text':
-        add_expression(expressions, node, node.html(), dict(root=root))
+        add_expression(expressions, node, node.html(), dict(root=root, attr='inner_html', path=path))
         return False
     else:
         for attribute, val in node[0].attrib.items():
-            add_expression(expressions, node, val, dict(root=root, attr=attribute))
+            add_expression(expressions, node, val, dict(root=root, attr=attribute, path=path))
         return not is_tag_defined(node.attr.__riot_tag__)
 
 def parse_expressions(expressions, root):
-    walk(root.dom, lambda node: parse_node(expressions, root, node))
+    walk(root.dom, lambda node, path: parse_node(expressions, root, node, path))
 
 def update_expressions(expressions, node):
     from .tags.text import parse_markup, META as TEXT_META
     for expression in expressions:
         dom = expression['dom']
+        path = expression.get('path')
+        ui = path and get_ui_by_path(node.ui, path)
         expr = expression['expr']
         attr = expression.get('attr')
         root = expression.get('root')
@@ -46,8 +48,10 @@ def update_expressions(expressions, node):
             continue
 
         expression['value'] = value
-        if not attr:
+        if attr == 'inner_html':
             dom.html(value)
+            markup = parse_markup(value) or ''
+            getattr(ui, TEXT_META['attribute_methods']['inner_html'])(markup)
             continue
         dom.attr[attr] = ''
         if callable(value):
