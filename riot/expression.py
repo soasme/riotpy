@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import urwid
 import sys
 from .template import render_template
 from .utils import walk, get_ui_by_path
@@ -53,6 +54,18 @@ def update_expressions(expressions, node):
             dom.html(value)
             markup = parse_markup(value) or ''
             getattr(ui, TEXT_META['attribute_methods']['inner_html'])(markup)
+            continue
+
+        if attr == 'onclick' and callable(value):
+            if '_sig_on_click' in ui.__dict__:
+                urwid.disconnect_by_key(ui, 'click', ui.__dict__['_sig_on_click'])
+            ui.__dict__['_sig_on_click'] = urwid.connect_signal(ui, 'click', value)
+            continue
+
+        if attr == 'onchange' and callable(value):
+            if '_sig_on_change' in ui.__dict__:
+                urwid.disconnect_by_key(ui, 'change', ui.__dict__['_sig_on_change'])
+            ui.__dict__['_sig_on_change'] = urwid.connect_signal(ui, 'change', value)
             continue
 
         dom.attr[attr] = ''
