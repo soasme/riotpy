@@ -37,19 +37,23 @@ def parse_expressions(expressions, root):
 def cache_event_handler(cache_pattern):
     def deco(f):
         @wraps(f)
-        def _deco(ui, event, handler):
+        def _deco(node, ui, event, handler):
             cache_key = cache_pattern.format(event=event)
             _ = cache_key in ui.__dict__ and \
                     urwid.disconnect_by_key(ui, event, ui.__dict__.pop(cache_key))
-            handler_key = f(ui, event, handler)
+            handler_key = f(node, ui, event, handler)
             ui.__dict__[cache_key] = handler_key
             return handler_key
         return _deco
     return deco
 
 @cache_event_handler('_sig_on_{event}')
-def reset_event_handler(ui, event, handler):
-    return urwid.connect_signal(ui, event, handler)
+def reset_event_handler(node, ui, event, handler):
+    def _handler(*args, **kwargs):
+        r = handler(*args, **kwargs)
+        node.update({})
+        return r
+    return urwid.connect_signal(ui, event, _handler)
 
 def update_expressions(expressions, node):
     from .tags.text import parse_markup, META as TEXT_META
@@ -76,7 +80,7 @@ def update_expressions(expressions, node):
 
         if callable(value):
             if attr in ('onclick', 'onchange'):
-                reset_event_handler(ui, attr[2:], value)
+                reset_event_handler(node, ui, attr[2:], value)
                 continue
 
         dom.attr[attr] = ''
