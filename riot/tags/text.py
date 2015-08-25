@@ -29,3 +29,9 @@ def parse_tag_from_node(node):
     else:
         markup = parse_markup(node)
     return Text(markup=markup, align=align, wrap=wrap)
+
+META = {
+    'attribute_methods': {
+        'inner_html': 'set_markup',
+    }
+}
