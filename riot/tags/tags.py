@@ -19,21 +19,22 @@ def parse_tag_from_node(node):
     tagname = node[0].tag
     uuid = node.attr.__riot_uuid__
     if uuid:
-        return get_dom(UUID(uuid)).ui
+        ui = get_dom(UUID(uuid)).ui
     elif tagname == 'text':
-        return text.parse_tag_from_node(node)
+        ui = text.parse_tag_from_node(node)
     elif tagname == 'filler':
-        return filler.parse_tag_from_node(node)
+        ui = filler.parse_tag_from_node(node)
     elif tagname == 'div':
-        return div.parse_tag_from_node(node)
+        ui = div.parse_tag_from_node(node)
     elif tagname == 'pile':
-        return pile.parse_tag_from_node(node)
+        ui = pile.parse_tag_from_node(node)
     elif tagname == 'solidfill':
-        return solidfill.parse_tag_from_node(node)
+        ui = solidfill.parse_tag_from_node(node)
     elif tagname == 'edit':
-        return edit.parse_tag_from_node(node)
+        ui = edit.parse_tag_from_node(node)
     elif tagname == 'button':
-        return button.parse_tag_from_node(node)
+        ui = button.parse_tag_from_node(node)
     else:
         raise NotImplementedError(tagname)
 
+    return ui
