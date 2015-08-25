@@ -32,6 +32,6 @@ def parse_tag_from_node(node):
 
 META = {
     'attribute_methods': {
-        'inner_html': 'set_markup',
+        'inner_html': 'set_text',
     }
 }
