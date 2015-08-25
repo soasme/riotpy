@@ -2,6 +2,7 @@
 
 import urwid
 import sys
+from functools import wraps
 from .template import render_template
 from .utils import walk, get_ui_by_path
 
@@ -33,6 +34,23 @@ def parse_node(expressions, root, node, path):
 def parse_expressions(expressions, root):
     walk(root.dom, lambda node, path: parse_node(expressions, root, node, path))
 
+def cache_event_handler(cache_pattern):
+    def deco(f):
+        @wraps(f)
+        def _deco(ui, event, handler):
+            cache_key = cache_pattern.format(event=event)
+            _ = cache_key in ui.__dict__ and \
+                    urwid.disconnect_by_key(ui, event, ui.__dict__.pop(cache_key))
+            handler_key = f(ui, event, handler)
+            ui.__dict__[cache_key] = handler_key
+            return handler_key
+        return _deco
+    return deco
+
+@cache_event_handler('_sig_on_{event}')
+def reset_event_handler(ui, event, handler):
+    return urwid.connect_signal(ui, event, handler)
+
 def update_expressions(expressions, node):
     from .tags.text import parse_markup, META as TEXT_META
     for expression in expressions:
@@ -56,19 +74,10 @@ def update_expressions(expressions, node):
             getattr(ui, TEXT_META['attribute_methods']['inner_html'])(markup)
             continue
 
-        if attr == 'onclick' and callable(value):
-            if '_sig_on_click' in ui.__dict__:
-                key = ui.__dict__.pop('_sig_on_click')
-                urwid.disconnect_by_key(ui, 'click', key)
-            ui.__dict__['_sig_on_click'] = urwid.connect_signal(ui, 'click', value)
-            continue
-
-        if attr == 'onchange' and callable(value):
-            if '_sig_on_change' in ui.__dict__:
-                key = ui.__dict__.pop('_sig_on_change')
-                urwid.disconnect_by_key(ui, 'change', key)
-            ui.__dict__['_sig_on_change'] = urwid.connect_signal(ui, 'change', value)
-            continue
+        if callable(value):
+            if attr in ('onclick', 'onchange'):
+                reset_event_handler(ui, attr[2:], value)
+                continue
 
         dom.attr[attr] = ''
         if callable(value):
