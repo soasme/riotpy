@@ -4,7 +4,7 @@ import re
 from uuid import uuid4, UUID
 from pyquery import PyQuery
 
-from . import text, filler, div, pile, solidfill, edit
+from . import text, filler, div, pile, solidfill, edit, button
 from ..observable import Observable
 from ..virtual_dom import get_dom
 from .utils import convert_string_to_node, detect_class
@@ -20,7 +20,7 @@ def parse_tag_from_node(node):
     uuid = node.attr.__riot_uuid__
     if uuid:
         return get_dom(UUID(uuid)).ui
-    if tagname == 'text':
+    elif tagname == 'text':
         return text.parse_tag_from_node(node)
     elif tagname == 'filler':
         return filler.parse_tag_from_node(node)
@@ -32,6 +32,8 @@ def parse_tag_from_node(node):
         return solidfill.parse_tag_from_node(node)
     elif tagname == 'edit':
         return edit.parse_tag_from_node(node)
+    elif tagname == 'button':
+        return button.parse_tag_from_node(node)
     else:
         raise NotImplementedError(tagname)
 
