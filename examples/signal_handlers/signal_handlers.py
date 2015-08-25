@@ -25,14 +25,7 @@ sig = define_tag('sig', '''
       self.name = opts['name']
 
   def answer(self, edit, text):
-      self.update({'name': text})
-
-  def exit(self, button):
-      import urwid
-      raise urwid.ExitMainLoop()
-
-
-
+      self.name = text
   </script>
 </sig>
 ''')
