@@ -12,7 +12,8 @@ sig = define_tag('sig', '''
     <pile>
       <edit caption="What is your name?" class="highlight" id="ask" onchange="{ answer }" />
       <div div_char='-' />
-      <text><span if="{ name }">Nick to meet you, </span><span class="highlight">{ name }</span></text>
+      <text if="{ name }" class="x">Nice to meet you, </text>
+      <text><span class="highlight">{ name }</span></text>
       <div />
       <button id="exit" label="Exit" onclick="{ exit }" />
     </pile>
