@@ -4,10 +4,10 @@ import re
 from uuid import uuid4, UUID
 from pyquery import PyQuery
 
-from . import text, filler, div, pile, solidfill, edit, button
+from . import text, filler, div, pile, solidfill, edit, button, listbox, checkbox
 from ..observable import Observable
 from ..virtual_dom import get_dom
-from .utils import convert_string_to_node, detect_class
+from .utils import convert_string_to_node, detect_class, detect_if
 
 convert_to_node = convert_string_to_node
 
@@ -15,6 +15,7 @@ def parse_tag_from_string(string):
     return parse_tag_from_node(convert_string_to_node(string))
 
 @detect_class
+@detect_if
 def parse_tag_from_node(node):
     tagname = node[0].tag
     uuid = node.attr.__riot_uuid__
@@ -34,6 +35,10 @@ def parse_tag_from_node(node):
         ui = edit.parse_tag_from_node(node)
     elif tagname == 'button':
         ui = button.parse_tag_from_node(node)
+    elif tagname == 'listbox':
+        ui = listbox.parse_tag_from_node(node)
+    elif tagname == 'checkbox':
+        ui = checkbox.parse_tag_from_node(node)
     else:
         raise NotImplementedError(tagname)
 
