@@ -1,6 +1,11 @@
 # -*- coding: utf-8 -*-
 import sys
 
+def debug(*args):
+    for arg in args:
+        print >> sys.stderr, arg,
+    print >> sys.stderr, ''
+
 def walk(root, function, path=None):
     if not root:
         return
@@ -19,12 +24,19 @@ def get_ui_by_path(root, path):
                 ui = ui.body
             elif isinstance(ui, urwid.Pile):
                 ui = ui.contents[0][0]
+            elif isinstance(ui, urwid.ListBox):
+                ui = ui.body.contents[0]
             elif isinstance(ui, urwid.AttrMap):
                 ui = ui.base_widget
+            elif isinstance(ui, urwid.Text):
+                continue
             else:
                 raise NotImplementedError(ui)
         else:
-            ui = ui.contents[level][0]
+            if callable(ui.contents):
+                ui = ui.contents()[level][0]
+            else:
+                ui = ui.contents[level][0]
     if isinstance(ui, urwid.AttrMap):
-        return ui.base_widget
+        return ui.original_widget
     return ui
