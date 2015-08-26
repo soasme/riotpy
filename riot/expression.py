@@ -58,6 +58,15 @@ def reset_event_handler(node, ui, event, handler):
         return r
     return urwid.connect_signal(ui, event, _handler)
 
+def update_if_expression(ui, state):
+    wraps = ui
+    while wraps:
+        if isinstance(wraps, IfWidget):
+            getattr(wraps, state and 'show' or 'hide')()
+            break
+        else:
+            wraps = wraps.original_widget
+
 def update_expressions(expressions, node):
     from .tags.text import parse_markup, META as TEXT_META
     from .tags.checkbox import META as CHECKBOX_META
@@ -74,16 +83,12 @@ def update_expressions(expressions, node):
         if expression.get('value') == value:
             continue
 
-        if attr == 'if':
-            value = bool(value)
-            wraps = ui
-            while wraps:
-                if isinstance(wraps, IfWidget):
-                    getattr(wraps, value and 'show' or 'hide')()
-                    break
-                else:
-                    wraps = wraps.original_widget
+        if attr == 'each':
+            debug(attr, value)
             continue
+
+        if attr == 'if':
+            update_if_expression(ui, bool(value))
 
         # text
         expression['value'] = value
