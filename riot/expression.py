@@ -4,7 +4,8 @@ import urwid
 import sys
 from functools import wraps
 from .template import render_template
-from .utils import walk, get_ui_by_path
+from .ui import IfWidget
+from .utils import walk, get_ui_by_path, debug
 
 NODES = {}
 
@@ -23,13 +24,15 @@ def add_expression(expressions, dom, val, extra={}):
 
 def parse_node(expressions, root, node, path):
     from .virtual_dom import is_tag_defined
+
+    for attribute, val in node[0].attrib.items():
+        add_expression(expressions, node, val, dict(root=root, attr=attribute, path=path))
+
     if node[0].tag == 'text':
         add_expression(expressions, node, node.html(), dict(root=root, attr='inner_html', path=path))
         return False
-    else:
-        for attribute, val in node[0].attrib.items():
-            add_expression(expressions, node, val, dict(root=root, attr=attribute, path=path))
-        return not is_tag_defined(node.attr.__riot_tag__)
+
+    return not is_tag_defined(node.attr.__riot_tag__)
 
 def parse_expressions(expressions, root):
     walk(root.dom, lambda node, path: parse_node(expressions, root, node, path))
@@ -57,6 +60,7 @@ def reset_event_handler(node, ui, event, handler):
 
 def update_expressions(expressions, node):
     from .tags.text import parse_markup, META as TEXT_META
+    from .tags.checkbox import META as CHECKBOX_META
     for expression in expressions:
         dom = expression['dom']
         path = expression.get('path')
@@ -70,6 +74,17 @@ def update_expressions(expressions, node):
         if expression.get('value') == value:
             continue
 
+        if attr == 'if':
+            value = bool(value)
+            wraps = ui
+            while wraps:
+                if isinstance(wraps, IfWidget):
+                    getattr(wraps, value and 'show' or 'hide')()
+                    break
+                else:
+                    wraps = wraps.original_widget
+            continue
+
         # text
         expression['value'] = value
         if attr == 'inner_html':
@@ -77,6 +92,7 @@ def update_expressions(expressions, node):
             markup = parse_markup(value) or ''
             getattr(ui, TEXT_META['attribute_methods']['inner_html'])(markup)
             continue
+
 
         if callable(value):
             if attr in ('onclick', 'onchange'):
@@ -93,4 +109,8 @@ def update_expressions(expressions, node):
                 return ret
             setattr(node.ui, attr, new_callback)
             continue
-        getattr(node.ui, 'set_%s' % attr)(value)
+        if isinstance(ui, urwid.CheckBox) and attr in CHECKBOX_META['attribute_methods']:
+            method, filter = CHECKBOX_META['attribute_methods'][attr]
+            getattr(ui, method)(filter(value))
+        else:
+            getattr(ui, 'set_%s' % attr)(value)
