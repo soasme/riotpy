@@ -25,6 +25,11 @@ def add_expression(expressions, dom, val, extra={}):
 def parse_node(expressions, root, node, path):
     from .virtual_dom import is_tag_defined
 
+    if node.attr.each:
+        add_expression(expressions, node, node.attr.each, dict(
+            root=root, attr='each', path=path, outer_html=node.outer_html()))
+        return False
+
     for attribute, val in node[0].attrib.items():
         add_expression(expressions, node, val, dict(root=root, attr=attribute, path=path))
 
@@ -67,6 +72,9 @@ def update_if_expression(ui, state):
         else:
             wraps = wraps.original_widget
 
+def update_each_expression(ui, dom, items):
+    debug(dom, items)
+
 def update_expressions(expressions, node):
     from .tags.text import parse_markup, META as TEXT_META
     from .tags.checkbox import META as CHECKBOX_META
@@ -84,7 +92,7 @@ def update_expressions(expressions, node):
             continue
 
         if attr == 'each':
-            debug(attr, value)
+            update_each_expression(ui, dom, value)
             continue
 
         if attr == 'if':
