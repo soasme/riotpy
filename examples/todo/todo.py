@@ -7,13 +7,14 @@ from riot.tags.utils import convert_string_to_node
 from riot.virtual_dom import define_tag, mount
 
 todo = define_tag('todo', '''<todo>
-  <pile>
+  <listbox>
     <text>{ title }</text>
+    <checkbox label="{ title }" state="{ done }" each="{ items }" />
     <edit name="input" />
     <button label="Add #{ next_count() }" onclick="{ add }" />
     <button label="X" onclick="{ remove_all_done }" />
     <button label="Exit" onclick="{ exit }">
-  </pile>
+  </listbox>
   <script>
     def init(self, opts):
         self.items = opts['items']
