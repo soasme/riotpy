@@ -3,7 +3,7 @@
 from mock import ANY
 from pytest import mark
 from pyquery import PyQuery
-from riot.expression import parse_document_expressions, evaluate_attribute_expression, parse_markup_expression
+from riot.expression import parse_document_expressions, evaluate_attribute_expression, parse_markup_expression, identify_document
 
 @mark.parametrize('html, result', [
     ('<test></test>', []),
@@ -64,3 +64,13 @@ def test_parse_markup_expression(text, result):
 ])
 def test_evaluate_expression(expression, context, result):
     assert evaluate_attribute_expression(expression, context) == result
+
+
+@mark.parametrize('document, result', [
+    ('<a></a>', '<a data-riot-id="0"></a>'),
+    ('<a><b/></a>', '<a data-riot-id="0"><b data-riot-id="0.0"></b></a>')
+])
+def test_identify_document(document, result):
+    root = PyQuery(document)
+    identify_document(root)
+    assert root.outer_html() == result

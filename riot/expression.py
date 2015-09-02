@@ -68,7 +68,22 @@ def evaluate_attribute_expression(expression, context):
         return _env.from_string(expression).render(**context)
     return _env.compile_expression(expression[1:-1])(**context)
 
+def identify_document(document):
+    def _make_id(path):
+        return '.'.join(map(str, path))
+    def _identify_document(document, path):
+        if not document:
+            return
+        document.attr['data-riot-id'] = _make_id(path)
+        if not document.children():
+            return
+        children_size = len(document.children())
+        for index in range(children_size):
+            _identify_document(document.children().eq(index), path + [index])
+    _identify_document(document, [0])
 
+def render_document(document, expressions, context):
+    pass
 
 def parse_children(children, root, vnode):
     # walk(root, lambda node: parse_node_children(children, node, vnode))
