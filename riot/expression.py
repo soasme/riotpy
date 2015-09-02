@@ -37,7 +37,7 @@ def parse_document_expressions(document):
             if _is_expression(val):
                 result.append(dict(expression=val, type='attribute', attribute=attribute, node=doc))
         if doc[0].tag == 'text':
-            result.append(dict(expression=doc.html(), type='markup', node=doc))
+            result.append(dict(expression=parse_markup_expression(doc), type='markup', node=doc))
             return result
         elif not doc.children():
             return result

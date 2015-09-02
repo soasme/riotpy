@@ -17,8 +17,8 @@ from riot.expression import parse_document_expressions, evaluate_expression, par
         {'expression': '{ value }', 'attribute': 'attr', 'type': 'attribute', 'node': ANY},
     ]),
 
-    ('<text><span class="test">{ markup }</span></text>', [
-        {'expression': '<span class="test">{ markup }</span>', 'type': 'markup', 'node': ANY},
+    ('<text>{ markup }</text>', [
+        {'expression': [{'expression': '{ markup }'}], 'type': 'markup', 'node': ANY},
     ]),
 
     ('<test><EachNode each="{ items }" /></test>', [
