@@ -3,11 +3,33 @@
 import urwid
 import sys
 from functools import wraps
+from pyquery import PyQuery
 from .template import render_template
 from .ui import IfWidget
 from .utils import walk, get_ui_by_path, debug
 
 NODES = {}
+
+def parse_document_expressions(document):
+    def _is_expression(string):
+        return '{' in string
+    def _parse_document_expressions(doc, result):
+        if not doc:
+            return result
+        for attribute, val in doc[0].attrib.items():
+            if _is_expression(val):
+                result.append(dict(expression=val, type='attribute', attribute=attribute, node=doc))
+        if doc[0].tag == 'text':
+            result.append(dict(expression=doc.html(), type='markup', node=doc))
+            return result
+        elif not doc.children():
+            return result
+        elif doc.children():
+            for child in doc.children():
+                result = _parse_document_expressions(PyQuery(child), result)
+            return result
+    return _parse_document_expressions(document, [])
+
 
 def parse_children(children, root, vnode):
     # walk(root, lambda node: parse_node_children(children, node, vnode))
