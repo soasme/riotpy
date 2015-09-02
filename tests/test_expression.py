@@ -19,6 +19,10 @@ from riot.expression import parse_document_expressions, evaluate_expression
 
     ('<text><span class="test">{ markup }</span></text>', [
         {'expression': '<span class="test">{ markup }</span>', 'type': 'markup', 'node': ANY},
+    ]),
+
+    ('<test><EachNode each="{ items }" /></test>', [
+        {'expression': '{ items }', 'impl': '<EachNode each="{ items }"></EachNode>', 'type': 'each', 'node': ANY},
     ])
 ])
 def test_parse_document_expressions(html, result):

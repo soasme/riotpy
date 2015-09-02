@@ -17,6 +17,9 @@ def parse_document_expressions(document):
     def _parse_document_expressions(doc, result):
         if not doc:
             return result
+        if doc.attr.each:
+            result.append(dict(expression=doc.attr.each, type='each', impl=doc.outer_html(), node=doc))
+            return result
         for attribute, val in doc[0].attrib.items():
             if _is_expression(val):
                 result.append(dict(expression=val, type='attribute', attribute=attribute, node=doc))
@@ -37,6 +40,11 @@ def evaluate_expression(expression, context):
     if not (expression.startswith('{') and expression.endswith('}')):
         return _env.from_string(expression).render(**context)
     return _env.compile_expression(expression[1:-1])(**context)
+
+def evaluate_document_expression(expressions, context):
+    for expression in expressions:
+        expression['node'].removeAttr('data-riotid')
+        expression['value'] = evaluate_expression(expression['expression'], context)
 
 def parse_children(children, root, vnode):
     # walk(root, lambda node: parse_node_children(children, node, vnode))
