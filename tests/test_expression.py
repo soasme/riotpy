@@ -3,7 +3,7 @@
 from mock import ANY
 from pytest import mark
 from pyquery import PyQuery
-from riot.expression import parse_document_expressions
+from riot.expression import parse_document_expressions, evaluate_expression
 
 @mark.parametrize('html, result', [
     ('<test></test>', []),
@@ -23,3 +23,14 @@ from riot.expression import parse_document_expressions
 ])
 def test_parse_document_expressions(html, result):
     assert parse_document_expressions(PyQuery(html)) == result
+
+
+@mark.parametrize('expression, context, result', [
+    ('{ expr }', {'expr': 1}, 1),
+    ('{ expr() }', {'expr': lambda: 1}, 1),
+    ('{ expr }', {'expr': lambda: 1}, ANY), # it's a function
+    ('Prefix {expr} Postfix', {'expr': 1}, 'Prefix 1 Postfix'),
+    ('{ expr | lower }', {'expr': 'HELLOWORLD'}, 'helloworld'),
+])
+def test_evaluate_expression(expression, context, result):
+    assert evaluate_expression(expression, context) == result

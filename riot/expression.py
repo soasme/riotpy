@@ -4,6 +4,7 @@ import urwid
 import sys
 from functools import wraps
 from pyquery import PyQuery
+from jinja2 import Environment
 from .template import render_template
 from .ui import IfWidget
 from .utils import walk, get_ui_by_path, debug
@@ -30,6 +31,12 @@ def parse_document_expressions(document):
             return result
     return _parse_document_expressions(document, [])
 
+_env = Environment(variable_start_string='{', variable_end_string='}')
+def evaluate_expression(expression, context):
+    context = context if isinstance(context, dict) else vars(context)
+    if not (expression.startswith('{') and expression.endswith('}')):
+        return _env.from_string(expression).render(**context)
+    return _env.compile_expression(expression[1:-1])(**context)
 
 def parse_children(children, root, vnode):
     # walk(root, lambda node: parse_node_children(children, node, vnode))
