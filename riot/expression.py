@@ -27,40 +27,48 @@ def parse_markup_expression(node):
 def parse_document_expressions(document):
     def _is_expression(string):
         return '{' in string
-    def _parse_document_expressions(doc, result):
+    def _pop_attr(doc, attribute):
+        value = doc.attr[attribute]
+        doc.removeAttr(attribute)
+        return value
+    def _make_each_expression(doc):
+        return dict(expression=_pop_attr(doc, 'each'),
+                    type='each',
+                    node=doc,
+                    impl=doc.outer_html(),
+                    impl_expressions=parse_document_expressions(doc))
+    def _make_attribute_expression(doc, attr, val):
+        return dict(expression=val, type='attribute', attribute=attr, node=doc)
+    def _make_markup_expression(doc):
+        return dict(expression=parse_markup_expression(doc), type='markup', node=doc)
+    def _parse_document_expressions(doc, result, path):
         if not doc:
             return result
         if doc.attr.each:
-            result.append(dict(expression=doc.attr.each, type='each', impl=doc.outer_html(), node=doc))
+            result.append(_make_each_expression(doc))
             return result
         for attribute, val in doc[0].attrib.items():
-            if _is_expression(val):
-                result.append(dict(expression=val, type='attribute', attribute=attribute, node=doc))
+            _ = _is_expression(val) and result.append(
+                _make_attribute_expression(doc, attribute, val))
         if doc[0].tag == 'text':
-            result.append(dict(expression=parse_markup_expression(doc), type='markup', node=doc))
+            result.append(_make_markup_expression(doc))
             return result
         elif not doc.children():
             return result
         elif doc.children():
-            for child in doc.children():
-                result = _parse_document_expressions(PyQuery(child), result)
+            for index, child in enumerate(doc.children()):
+                result = _parse_document_expressions(PyQuery(child), result, path + [index])
             return result
-    return _parse_document_expressions(document, [])
+    return _parse_document_expressions(document, [], [0])
 
 _env = Environment(variable_start_string='{', variable_end_string='}')
-def evaluate_expression(expression, context):
+def evaluate_attribute_expression(expression, context):
     context = context if isinstance(context, dict) else vars(context)
     if not (expression.startswith('{') and expression.endswith('}')):
         return _env.from_string(expression).render(**context)
     return _env.compile_expression(expression[1:-1])(**context)
 
-def evaluate_document_expression(expressions, context):
-    for expression in expressions:
-        expression['node'].removeAttr('data-riotid')
-        value = expression.get('value')
-        evaluated = evaluate_expression(expression['expression'], context)
-        if value != evaluated:
-            expression['node'].removeAttr('data-ui')
+
 
 def parse_children(children, root, vnode):
     # walk(root, lambda node: parse_node_children(children, node, vnode))
