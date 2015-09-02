@@ -3,7 +3,7 @@
 from mock import ANY
 from pytest import mark
 from pyquery import PyQuery
-from riot.expression import parse_document_expressions, evaluate_expression
+from riot.expression import parse_document_expressions, evaluate_expression, parse_markup_expression
 
 @mark.parametrize('html, result', [
     ('<test></test>', []),
@@ -38,3 +38,21 @@ def test_parse_document_expressions(html, result):
 ])
 def test_evaluate_expression(expression, context, result):
     assert evaluate_expression(expression, context) == result
+
+@mark.parametrize('text, result', [
+    ('<text/>', []),
+    ('<text>hello</text>', [{'expression': 'hello'}]),
+    ('<text>{ hello }</text>', [{'expression': '{ hello }'}]),
+    ('<text>{ prefix }<span class="test" if="{ mid }">{ mid }</span>{ postfix }</text>', [
+        {'expression': '{ prefix }'},
+        {'expression': [{'expression': '{ mid }'}], 'class': 'test', 'if': '{ mid }', 'each': None},
+        {'expression': '{ postfix }'},
+    ]),
+    ('<text><span each="{ items }">{ title }</span></text>', [
+        {'expression': [
+            {'expression': '{ title }'}
+        ], 'class': '', 'if': None, 'each': '{ items }'}
+    ]),
+])
+def test_parse_markup_expression(text, result):
+    assert parse_markup_expression(PyQuery(text)) == result

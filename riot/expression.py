@@ -11,6 +11,19 @@ from .utils import walk, get_ui_by_path, debug
 
 NODES = {}
 
+def parse_markup_expression(node):
+    rs = []
+    for _node in PyQuery(node).contents():
+        if isinstance(_node, str):
+            rs.append({'expression': _node})
+        elif _node.tag == 'span':
+            if_ = _node.get('if')
+            each_ = _node.get('each')
+            class_name = _node.get('class', '')
+            span_markup = parse_markup_expression(_node)
+            rs.append({'expression': span_markup, 'class': class_name, 'if': if_, 'each': each_})
+    return rs
+
 def parse_document_expressions(document):
     def _is_expression(string):
         return '{' in string
@@ -44,7 +57,10 @@ def evaluate_expression(expression, context):
 def evaluate_document_expression(expressions, context):
     for expression in expressions:
         expression['node'].removeAttr('data-riotid')
-        expression['value'] = evaluate_expression(expression['expression'], context)
+        value = expression.get('value')
+        evaluated = evaluate_expression(expression['expression'], context)
+        if value != evaluated:
+            expression['node'].removeAttr('data-ui')
 
 def parse_children(children, root, vnode):
     # walk(root, lambda node: parse_node_children(children, node, vnode))
