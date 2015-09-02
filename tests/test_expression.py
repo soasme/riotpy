@@ -3,7 +3,7 @@
 from mock import ANY
 from pytest import mark
 from pyquery import PyQuery
-from riot.expression import parse_document_expressions, evaluate_attribute_expression, parse_markup_expression, identify_document
+from riot.expression import parse_document_expressions, evaluate_attribute_expression, parse_markup_expression, identify_document, evaluate_markup_expression
 
 @mark.parametrize('html, result', [
     ('<test></test>', []),
@@ -74,3 +74,15 @@ def test_identify_document(document, result):
     root = PyQuery(document)
     identify_document(root)
     assert root.outer_html() == result
+
+@mark.parametrize('expr, context, markups', [
+    ([{'expression': 'hello world'}], {}, ['hello world']),
+    ([{'expression': '{ title }'}], {'title': 'hello world'}, ['hello world']),
+    ([{'expression': '{ title }', 'if': '{ false }'}], {'title': 'hello world', 'false': False}, []),
+    ([{'expression': '{ title }', 'if': '{ true }'}], {'title': 'hello world', 'true': True}, ['hello world']),
+    ([{'expression': '{ title }', 'each': '{ items }'}], {'items': [{'title': 'hello'}, {'title': 'world'}]}, ['hello', 'world']),
+    ([{'expression': '{ title }', 'class': 'class'}], {'title': 'hello world'}, [('class', 'hello world')]),
+    ([{'expression': [{'expression': '{ title }', 'class': '{ inner }'}], 'class': '{ outer }'}], {'title': 'hello world', 'inner': 'inner', 'outer': 'outer'}, [('outer', ('inner', 'hello world'))])
+])
+def test_evaluate_markup_expression(expr, context, markups):
+    assert evaluate_markup_expression(expr, context) == markups

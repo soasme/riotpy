@@ -67,6 +67,47 @@ def evaluate_attribute_expression(expression, context):
     if not (expression.startswith('{') and expression.endswith('}')):
         return _env.from_string(expression).render(**context)
     return _env.compile_expression(expression[1:-1])(**context)
+def evaluate_each_expression(expression, context):
+    pass
+def evaluate_markup_expression(expression, context):
+    def _evaluate_markup_expression(expressions, context, markups):
+        if isinstance(expressions, str):
+            markup = evaluate_attribute_expression(expressions, context)
+            return markups + [markup]
+        if isinstance(expressions, dict) and isinstance(expressions['expression'], str):
+            classname = evaluate_attribute_expression(expressions.get('class', ''), context)
+            markup = evaluate_attribute_expression(expressions['expression'], context)
+            markup = (classname, markup) if classname else markup
+            return markups + [markup]
+        for expression in expressions:
+            if expression.get('if') is not None:
+                condition = evaluate_attribute_expression(expression['if'], context)
+                if not condition:
+                    return markups
+            if expression.get('each') is not None:
+                items = evaluate_attribute_expression(expression['each'], context)
+                for index, item in enumerate(items):
+                    loopcontext = {}
+                    loopcontext.update(context)
+                    loopcontext.update(item if isinstance(item, dict) else vars(item))
+                    loopcontext['loopcontext'] = index
+                    markups = _evaluate_markup_expression(
+                        expression['expression'], loopcontext, markups)
+                    classname = evaluate_attribute_expression(expression.get('class', ''), loopcontext)
+                    markups[-1] = (classname, markups[-1]) if classname else markups[-1]
+                return markups
+            if isinstance(expression['expression'], str):
+                classname = evaluate_attribute_expression(expression.get('class', ''), context)
+                markup = evaluate_attribute_expression(expression['expression'], context)
+                markup = (classname, markup) if classname else markup
+                return markups + [markup]
+            for expr in expression['expression']:
+                markups = _evaluate_markup_expression(expr, context, markups)
+                classname = evaluate_attribute_expression(expression.get('class', ''), context)
+                markups[-1] = (classname, markups[-1]) if classname else markups[-1]
+        return markups
+    markups = _evaluate_markup_expression(expression, context, [])
+    return markups
 
 def identify_document(document):
     def _make_id(path):
@@ -83,7 +124,8 @@ def identify_document(document):
     _identify_document(document, [0])
 
 def render_document(document, expressions, context):
-    pass
+    for expression in expressions:
+        pass
 
 def parse_children(children, root, vnode):
     # walk(root, lambda node: parse_node_children(children, node, vnode))
