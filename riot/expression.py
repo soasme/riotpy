@@ -68,47 +68,60 @@ def evaluate_attribute_expression(expression, context):
         return _env.from_string(expression).render(**context)
     return _env.compile_expression(expression[1:-1])(**context)
 def evaluate_each_expression(expression, context):
-    pass
+    items = evaluate_attribute_expression(expression['expression'], context)
+    evaluated_expressions = []
+    loopcontext = {}
+    loopcontext.update(context)
+    for loopindex, item in enumerate(items):
+        loopcontext.update(item if isinstance(item, dict) else vars(item))
+        loopcontext['loopcontext'] = loopindex
+        item_expressions = []
+        for expr in expression['impl_expressions']:
+            item_expressions.append(evaluate_expression(expr, loopcontext))
+        evaluated_expressions.append(item_expressions)
+    return evaluated_expressions
 def evaluate_markup_expression(expression, context):
     def _evaluate_markup_expression(expressions, context, markups):
         if isinstance(expressions, str):
             markup = evaluate_attribute_expression(expressions, context)
             return markups + [markup]
-        if isinstance(expressions, dict) and isinstance(expressions['expression'], str):
-            classname = evaluate_attribute_expression(expressions.get('class', ''), context)
-            markup = evaluate_attribute_expression(expressions['expression'], context)
-            markup = (classname, markup) if classname else markup
-            return markups + [markup]
-        for expression in expressions:
-            if expression.get('if') is not None:
-                condition = evaluate_attribute_expression(expression['if'], context)
-                if not condition:
-                    return markups
-            if expression.get('each') is not None:
-                items = evaluate_attribute_expression(expression['each'], context)
-                for index, item in enumerate(items):
-                    loopcontext = {}
-                    loopcontext.update(context)
-                    loopcontext.update(item if isinstance(item, dict) else vars(item))
-                    loopcontext['loopcontext'] = index
-                    markups = _evaluate_markup_expression(
-                        expression['expression'], loopcontext, markups)
-                    classname = evaluate_attribute_expression(expression.get('class', ''), loopcontext)
-                    markups[-1] = (classname, markups[-1]) if classname else markups[-1]
+        if isinstance(expressions, list):
+            for expression in expressions:
+                markups = _evaluate_markup_expression(expression, context, markups)
+            return markups
+        if expressions.get('if') is not None:
+            condition = evaluate_attribute_expression(expressions['if'], context)
+            if not condition:
                 return markups
-            if isinstance(expression['expression'], str):
-                classname = evaluate_attribute_expression(expression.get('class', ''), context)
-                markup = evaluate_attribute_expression(expression['expression'], context)
-                markup = (classname, markup) if classname else markup
-                return markups + [markup]
-            for expr in expression['expression']:
-                markups = _evaluate_markup_expression(expr, context, markups)
-                classname = evaluate_attribute_expression(expression.get('class', ''), context)
+        if expressions.get('each') is not None:
+            items = evaluate_attribute_expression(expressions['each'], context)
+            for index, item in enumerate(items):
+                loopcontext = {}
+                loopcontext.update(context)
+                loopcontext.update(item if isinstance(item, dict) else vars(item))
+                loopcontext['loopcontext'] = index
+                markups = _evaluate_markup_expression(
+                    expressions['expression'], loopcontext, markups)
+                classname = evaluate_attribute_expression(expressions.get('class', ''), loopcontext)
                 markups[-1] = (classname, markups[-1]) if classname else markups[-1]
-        return markups
+            return markups
+
+        classname = evaluate_attribute_expression(expressions.get('class', ''), context)
+        markup = evaluate_markup_expression(expressions['expression'], context)
+        if len(markup) == 1:
+            markup = markup[0]
+        markup = (classname, markup) if classname else markup
+        return markups + [markup]
+
     markups = _evaluate_markup_expression(expression, context, [])
     return markups
-
+def evaluate_expression(expression, context):
+    if expression['type'] == 'markup':
+        return evaluate_markup_expression(expression, context)
+    elif expression['type'] == 'attribute':
+        return evaluate_attribute_expression(expression, context)
+    elif expression['type'] == 'each':
+        return evaluate_each_expression(expression, context)
 def identify_document(document):
     def _make_id(path):
         return '.'.join(map(str, path))

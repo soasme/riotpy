@@ -3,7 +3,7 @@
 from mock import ANY
 from pytest import mark
 from pyquery import PyQuery
-from riot.expression import parse_document_expressions, evaluate_attribute_expression, parse_markup_expression, identify_document, evaluate_markup_expression
+from riot.expression import parse_document_expressions, evaluate_attribute_expression, parse_markup_expression, identify_document, evaluate_markup_expression, evaluate_each_expression
 
 @mark.parametrize('html, result', [
     ('<test></test>', []),
@@ -86,3 +86,22 @@ def test_identify_document(document, result):
 ])
 def test_evaluate_markup_expression(expr, context, markups):
     assert evaluate_markup_expression(expr, context) == markups
+
+@mark.parametrize('expr, context, result', [
+    ({'expression': '{ items }', 'type': 'each', 'impl_expressions': [
+        {'expression': [{'expression': '{ title }'}], 'type': 'markup'}
+    ]}, {'items': [{'title': 'hello'}, {'title': 'world'}]}, [
+        # item1
+        [
+            # item1.expr1
+            ['hello']
+        ],
+        # item2
+        [
+            # item2.expr2
+            ['world']
+        ]
+    ])
+])
+def test_evaluate_each_expression(expr, context, result):
+    assert evaluate_each_expression(expr, context) == result
