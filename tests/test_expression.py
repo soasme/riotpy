@@ -3,7 +3,7 @@
 from mock import ANY
 from pytest import mark
 from pyquery import PyQuery
-from riot.expression import parse_document_expressions, evaluate_attribute_expression, parse_markup_expression, identify_document, evaluate_markup_expression, evaluate_each_expression
+from riot.expression import parse_document_expressions, evaluate_attribute_expression, parse_markup_expression, identify_document, evaluate_markup_expression, evaluate_each_expression, mark_dirty, render_document
 
 @mark.parametrize('html, result', [
     ('<test></test>', []),
@@ -76,13 +76,13 @@ def test_identify_document(document, result):
     assert root.outer_html() == result
 
 @mark.parametrize('expr, context, markups', [
-    ([{'expression': 'hello world'}], {}, ['hello world']),
-    ([{'expression': '{ title }'}], {'title': 'hello world'}, ['hello world']),
-    ([{'expression': '{ title }', 'if': '{ false }'}], {'title': 'hello world', 'false': False}, []),
-    ([{'expression': '{ title }', 'if': '{ true }'}], {'title': 'hello world', 'true': True}, ['hello world']),
+    ([{'expression': 'hello world'}], {}, 'hello world'),
+    ([{'expression': '{ title }'}], {'title': 'hello world'}, 'hello world'),
+    ([{'expression': '{ title }', 'if': '{ false }'}], {'title': 'hello world', 'false': False}, ''),
+    ([{'expression': '{ title }', 'if': '{ true }'}], {'title': 'hello world', 'true': True}, 'hello world'),
     ([{'expression': '{ title }', 'each': '{ items }'}], {'items': [{'title': 'hello'}, {'title': 'world'}]}, ['hello', 'world']),
-    ([{'expression': '{ title }', 'class': 'class'}], {'title': 'hello world'}, [('class', 'hello world')]),
-    ([{'expression': [{'expression': '{ title }', 'class': '{ inner }'}], 'class': '{ outer }'}], {'title': 'hello world', 'inner': 'inner', 'outer': 'outer'}, [('outer', ('inner', 'hello world'))])
+    ([{'expression': '{ title }', 'class': 'class'}], {'title': 'hello world'}, ('class', 'hello world')),
+    ([{'expression': [{'expression': '{ title }', 'class': '{ inner }'}], 'class': '{ outer }'}], {'title': 'hello world', 'inner': 'inner', 'outer': 'outer'}, ('outer', ('inner', 'hello world')))
 ])
 def test_evaluate_markup_expression(expr, context, markups):
     assert evaluate_markup_expression(expr, context) == markups
@@ -90,18 +90,43 @@ def test_evaluate_markup_expression(expr, context, markups):
 @mark.parametrize('expr, context, result', [
     ({'expression': '{ items }', 'type': 'each', 'impl_expressions': [
         {'expression': [{'expression': '{ title }'}], 'type': 'markup'}
-    ]}, {'items': [{'title': 'hello'}, {'title': 'world'}]}, [
-        # item1
-        [
-            # item1.expr1
-            ['hello']
-        ],
-        # item2
-        [
-            # item2.expr2
-            ['world']
-        ]
-    ])
+    ]},
+     {'items': [{'title': 'hello'}, {'title': 'world'}]},
+     [{'title': 'hello'}, {'title': 'world'}]),
 ])
 def test_evaluate_each_expression(expr, context, result):
     assert evaluate_each_expression(expr, context) == result
+
+
+def test_mark_dirty():
+    node = PyQuery('<a data-riot-id="0"><b data-riot-id="0.0"><c data-riot-id="0.0.0"></c></b></a>')
+    mark_dirty(node.children('b'))
+    assert node.attr['data-riot-dirty'] == 'true'
+    assert node.children('b').attr['data-riot-dirty'] == 'true'
+    assert not node.children('c').attr['data-riot-dirty']
+
+def test_render_attribute_to_document():
+    document = PyQuery('<a attribute="{ value }" data-riot-id="0"></a>')
+    expression =  {'expression': '{ value }', 'attribute': 'attribute', 'type': 'attribute', 'node': document}
+    render_document([expression], {'value': 'value'})
+    assert document.outer_html() == '<a attribute="value" data-riot-id="0" data-riot-dirty="true"></a>'
+    render_document([expression], {'value': 1})
+    assert document.outer_html() == '<a attribute="1" data-riot-id="0" data-riot-dirty="true"></a>'
+
+def test_render_markup_to_document():
+    document = PyQuery('<custom data-riot-id="0"><text data-riot-id="0.0"><span class="name">{ name}</span><span class="greet">{ greet }</span></text></custom>')
+    expressions = parse_document_expressions(document)
+    render_document(expressions, {'name': '@ainesmile', 'greet': 'I love you.'})
+    assert document.outer_html() == '<custom data-riot-id="0" data-riot-dirty="true"><text data-riot-id="0.0" data-riot-dirty="true"></text></custom>'
+    assert expressions[0]['value'] == [(u'name', '@ainesmile'), (u'greet', 'I love you.')]
+    render_document(expressions, {'name': '@soasme', 'greet': 'I love you, too.'})
+    assert expressions[0]['value'] == [(u'name', '@soasme'), (u'greet', 'I love you, too.')]
+
+def test_render_each_to_document():
+    document = PyQuery('<custom data-riot-id="0"><button label="{ label }" each="{ items }" data-riot-id="0.0"></button></custom>')
+    expressions = parse_document_expressions(document)
+    render_document(expressions, {'items': [{'label': 'first'}, {'label': 'second'}]})
+    assert document.attr['data-riot-dirty'] == 'true'
+    assert len(document.children()) == 2
+    assert document('button').eq(0).attr.label == 'first'
+    assert document('button').eq(1).attr.label == 'second'
