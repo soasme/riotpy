@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+import inspect
+import json
 import urwid
 import sys
 from copy import deepcopy
@@ -151,15 +153,7 @@ def render_document(expressions, context):
         if expression.get('value') == evaluation:
             continue
         expression['value'] = evaluation
-        # if
-        if expression.get('type') == 'attribute':
-            node.attr[expression.get('attribute')] = str(evaluation)
-            mark_dirty(node)
-            continue
-        if expression.get('type') == 'markup':
-            node.html('')
-            mark_dirty(node)
-            continue
+
         if expression.get('type') == 'each':
             parent = node.parent()
             riot_id = node.attr['data-riot-id']
@@ -183,6 +177,17 @@ def render_document(expressions, context):
             placeholder.remove()
             mark_dirty(parent)
             continue
+        if expression.get('type') == 'markup':
+            node.attr['markup'] = json.dumps(evaluation)
+            node.html('')
+            mark_dirty(node)
+            continue
+        if expression.get('type') == 'attribute':
+            attribute = expression.get('attribute')
+            node.attr[attribute] = str(evaluation)
+            mark_dirty(node)
+            continue
+
 
 def parse_children(children, root, vnode):
     # walk(root, lambda node: parse_node_children(children, node, vnode))
