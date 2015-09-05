@@ -77,7 +77,6 @@ def evaluate_each_expression(expression, context):
 
 def evaluate_markup_expression(expression, context):
     def _evaluate_markup_expression(expressions, context, markups):
-        print expressions, context, markups
         if isinstance(expressions, str):
             markup = evaluate_attribute_expression(expressions, context)
             return markups + [markup]
@@ -103,6 +102,8 @@ def evaluate_markup_expression(expression, context):
             return markups
 
         markup = evaluate_markup_expression(expressions['expression'], context)
+        if not markup:
+            return markups
         if len(markup) == 1:
             markup = markup[0]
         classname = expressions.get('class', '')
@@ -165,7 +166,7 @@ def render_document(expressions, context):
             original_children.remove()
             # 2. insert children
             loopcontext = {}
-            loopcontext.update(context)
+            loopcontext.update(context if isinstance(context, dict) else vars(context))
             for loop_index, item in enumerate(evaluation):
                 loopcontext.update(item if isinstance(item, dict) else vars(item))
                 loopcontext['loopindex'] = loop_index
