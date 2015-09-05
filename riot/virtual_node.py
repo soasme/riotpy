@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 
 from uuid import uuid4
-from urwid import WidgetDecoration, SolidFill, Filler, Text, ExitMainLoop
+from urwid import WidgetDecoration, SolidFill, Filler, Text, ExitMainLoop, WidgetPlaceholder
 from pyquery import PyQuery
 from .observable import Observable
-from .expression import update_expressions, parse_expressions
+from .expression import update_expressions, parse_expressions, parse_document_expressions, identify_document, render_document
+from .ui.builtin_widgets import generate_widget
 from .template import render_template
 from .parse import extract_logic, attach_logic_to_node
 
@@ -19,9 +20,10 @@ def new_node(impl, inner, **kwargs):
     node.root = kwargs.get('root')
     node.parent = kwargs.get('parent')
     node.dom = make_dom(node)
+    node.document = make_dom(node)
     node.exit = quit
-    node.update = lambda data: update_node(node, data)
-    node.mount = lambda: mount_node(node)
+    node.update = lambda data: update_node_refactored(node, data)
+    node.mount = lambda: mount_node_refactored(node)
     node.unmount = lambda: unmount_node(node)
     return node
 
@@ -86,6 +88,26 @@ def update_node(node, data):
 
 def make_dom(node):
     return PyQuery(node.impl.get('html'))
+
+def mount_node_refactored(node):
+    node.ui = WidgetPlaceholder(SolidFill())
+    node.opts = render_opts(node)
+    logic = extract_logic(node.impl.get('html'))
+    attach_logic_to_node(logic, node, node.opts)
+    node.document.children('script').remove()
+    identify_document(node.document)
+    node.expressions = parse_document_expressions(node.document.children().eq(0))
+    update_node_refactored(node)
+    node.trigger('mount')
+def update_node_refactored(node, data={}):
+    inherit_from_parent(node)
+    #data = clean_up_data(data)
+    #data = normalize_data(data)
+    extend_node(node, data)
+    node.trigger('update', data)
+    render_document(node.expressions, node)
+    node.ui.original_widget = generate_widget(node.document.children().eq(0))
+    node.trigger('updated')
 
 def mount_node(node):
     from .tags.tags import parse_tag_from_node
