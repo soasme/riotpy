@@ -10,6 +10,3 @@ def test_new_node():
     assert node.uuid
     for life_cycle_function in ('update', 'mount', 'unmount'):
         assert getattr(node, life_cycle_function)
-
-def test_mount_children_nodes(node):
-    pass
