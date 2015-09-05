@@ -9,24 +9,30 @@ from riot.virtual_dom import define_tag, mount
 todo = define_tag('todo', '''<todo>
   <pile>
     <text>{ title }</text>
-    <check-box label="{ title }" state="{ done }" each="{ items }" />
-    <edit name="input" />
+    <checkbox label="{ title }" state="{ done }" onchange="{ check }" each="{ items }"></checkbox>
+    <edit name="input"></edit>
     <button label="Add #{ next_count() }" onclick="{ add }" />
-    <button label="X" onclick="{ remove_all_done }" />
-    <button label="Exit" onclick="{ exit }">
+    <button label="Remove done" onclick="{ remove_all_done }" />
+    <button label="Exit" onclick="{ exit }" />
   </pile>
   <script>
     def init(self, opts):
         self.items = opts['items']
         self.title = opts['title']
 
-    def edit(self, e):
-        self.text = e.target.value
+
+    def check(self, e):
+        index = e.target.loopindex
+        item = self.items[index]
+        item['done'] = e.data['state']
 
     def add(self, e):
-        if self.text:
-            self.items.append(dict(title=self.text, done=False, hidden=False))
-            self.text = self.input.value = ''
+        input = self.el("edit[name=input]")
+        text = input.edit_text
+        if not text:
+            return
+        self.items = self.items + [dict(title=text, done=False, hidden=False)]
+        input.edit_text = ''
 
     def remove_all_done(self, e):
         self.items = [item for item in self.items if not item.get('done')]
@@ -35,7 +41,7 @@ todo = define_tag('todo', '''<todo>
         return [item for item in self.items if not item.get('hidden')]
 
     def count(self):
-        return len(self.not_hidden_items())
+        return len(self.items)
 
     def next_count(self):
         return self.count() + 1
@@ -50,7 +56,7 @@ todo = define_tag('todo', '''<todo>
 root = convert_string_to_node('<filler><todo></todo></filler>')
 
 mount(root, 'todo', 'todo', {
-    'title': 'I want to behave!',
+    'title': 'TODO list',
     'items': [
         {'title': 'Avoid excessive coffeine', 'done': True, 'hidden': False},
         {'title': 'Hidden item', 'done': True, 'hidden': True},
