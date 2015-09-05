@@ -5,6 +5,7 @@ import urwid
 import inspect
 from functools import wraps
 from riot.multimethods import MultiMethod, method, Default
+from . import wrapped_widgets
 
 def boolean_filter(value):
     if value in ('off', 'False', 'None', '', None):
@@ -33,17 +34,30 @@ def cache_widget(f):
             del CACHE[key]
 
         widget = f(document)
+
+        if document.attr['data-riot-loopindex']:
+            widget.__dict__['loopindex'] = int(document.attr['data-riot-loopindex'])
+
         key = id(widget)
         CACHE[key] = widget
         document.attr['data-riot-widget'] = str(key)
         document.removeAttr('data-riot-dirty')
+        widget.__dict__['document'] = document
         return widget
     return _cache_widget
+
+def get_widget(document):
+    if not document.attr['data-riot-widget']:
+        raise Exception('NotBounded')
+    return CACHE[int(document.attr['data-riot-widget'])]
 
 def generate_general_widget(document):
     tag = document[0].tag
     widget_classname = ''.join([t.capitalize() for t in tag.split('-')])
-    widget_class = getattr(urwid, widget_classname)
+    try:
+        widget_class = getattr(urwid, widget_classname)
+    except AttributeError:
+        widget_class = getattr(wrapped_widgets, widget_classname)
     args = inspect.getargspec(widget_class.__init__).args
     args.remove('self')
     attr_args = {}
@@ -75,7 +89,7 @@ def generate_widget(document):
     widget_class, attr_args = generate_general_widget(document)
     return widget_class(**attr_args)
 
-@method('check-box')
+@method('checkbox')
 @cache_widget
 def generate_widget(document):
     widget_class, attr_args = generate_general_widget(document)
