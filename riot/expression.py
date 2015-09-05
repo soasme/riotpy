@@ -4,12 +4,14 @@ import inspect
 import json
 import urwid
 import sys
-from copy import deepcopy
+from copy import copy, deepcopy
 from functools import wraps
 from pyquery import PyQuery
+from urwid.signals import disconnect_signal_by_key
 from jinja2 import Environment
 from .template import render_template
 from .ui import IfWidget
+from .ui.builtin_widgets import generate_widget
 from .utils import walk, get_ui_by_path, debug
 
 NODES = {}
@@ -94,7 +96,7 @@ def evaluate_markup_expression(expression, context):
                 loopcontext = {}
                 loopcontext.update(context)
                 loopcontext.update(item if isinstance(item, dict) else vars(item))
-                loopcontext['loopcontext'] = index
+                loopcontext['loopindex'] = index
                 markups = _evaluate_markup_expression(
                     expressions['expression'], loopcontext, markups)
                 classname = evaluate_attribute_expression(expressions.get('class', ''), loopcontext)
@@ -147,36 +149,51 @@ def mark_dirty(node):
     node.attr['data-riot-dirty'] = 'true'
     mark_dirty(node.parent())
 
-def render_document(expressions, context):
+def render_document(vnode, expressions, context):
     for expression in expressions:
         evaluation = evaluate_expression(expression, context)
         node = expression.get('node')
-        if expression.get('value') == evaluation:
+        if isinstance(expression.get('value'), basestring) and expression.get('value') == evaluation:
             continue
         expression['value'] = evaluation
 
         if expression.get('type') == 'each':
-            parent = node.parent()
+            if expression.get('parent'):
+                parent = expression.get('parent')
+            else:
+                parent = node.parent()
+                expression['parent'] = parent
             riot_id = node.attr['data-riot-id']
             original_children = parent.children('[data-riot-id="%s"]' % riot_id)
             # 0. add placeholder
-            placeholder = PyQuery('<span></span>')
+            placeholder = PyQuery('<text></text>')
             placeholder.insertBefore(original_children.eq(0))
             # 1. remove children
+            original_node = original_children.clone()
             original_children.remove()
+            expression['node'] = original_node
             # 2. insert children
             loopcontext = {}
             loopcontext.update(context if isinstance(context, dict) else vars(context))
+            expressions_col = []
             for loop_index, item in enumerate(evaluation):
                 loopcontext.update(item if isinstance(item, dict) else vars(item))
                 loopcontext['loopindex'] = loop_index
                 child_node = PyQuery(expression.get('impl'))
+                child_node.attr['data-riot-loopindex'] = str(loop_index)
                 expressions = parse_document_expressions(child_node)
-                render_document(expressions, loopcontext)
+                expressions_col.append((expressions, loopcontext))
+                render_document(vnode, expressions, loopcontext)
                 child_node.insertBefore(placeholder)
             # 3. remove placeholder
-            placeholder.remove()
+            if len(evaluation) == 0:
+                placeholder.attr['data-riot-id'] = str(riot_id)
+            else:
+                placeholder.remove()
             mark_dirty(parent)
+            generate_widget(parent)
+            for expressions, loopcontext in expressions_col:
+                connect_signals(vnode, expressions, loopcontext)
             continue
         if expression.get('type') == 'markup':
             node.attr['markup'] = json.dumps(evaluation)
@@ -189,6 +206,16 @@ def render_document(expressions, context):
             mark_dirty(node)
             continue
 
+def connect_signals(vnode, expressions, context):
+    from .ui.builtin_widgets import get_widget
+    for expression in expressions:
+        if expression.get('type') != 'attribute' or expression.get('attribute') not in (
+                'onclick', 'onchange'
+        ):
+            continue
+        widget = get_widget(expression.get('node'))
+        callback = evaluate_attribute_expression(expression['expression'], context)
+        reset_event_handler(vnode, widget, expression.get('attribute')[2:], callback)
 
 def parse_children(children, root, vnode):
     # walk(root, lambda node: parse_node_children(children, node, vnode))
@@ -229,7 +256,7 @@ def cache_event_handler(cache_pattern):
         def _deco(node, ui, event, handler):
             cache_key = cache_pattern.format(event=event)
             _ = cache_key in ui.__dict__ and \
-                    urwid.disconnect_by_key(ui, event, ui.__dict__.pop(cache_key))
+                disconnect_signal_by_key(ui, event, ui.__dict__.pop(cache_key))
             handler_key = f(node, ui, event, handler)
             ui.__dict__[cache_key] = handler_key
             return handler_key
