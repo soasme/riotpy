@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 
+import sys
 from uuid import uuid4
 from urwid import WidgetDecoration, SolidFill, Filler, Text, ExitMainLoop, WidgetPlaceholder
 from pyquery import PyQuery
 from .observable import Observable
-from .expression import update_expressions, parse_expressions, parse_document_expressions, identify_document, render_document
-from .ui.builtin_widgets import generate_widget
+from .expression import update_expressions, parse_expressions, parse_document_expressions, identify_document, render_document, connect_signals
+from .ui.builtin_widgets import generate_widget, get_widget
 from .template import render_template
 from .parse import extract_logic, attach_logic_to_node
 
@@ -25,6 +26,7 @@ def new_node(impl, inner, **kwargs):
     node.update = lambda data: update_node_refactored(node, data)
     node.mount = lambda: mount_node_refactored(node)
     node.unmount = lambda: unmount_node(node)
+    node.el = lambda selector: get_widget(node.document(selector))
     return node
 
 def new_child_node(impl, dom, root):
@@ -105,8 +107,10 @@ def update_node_refactored(node, data={}):
     #data = normalize_data(data)
     extend_node(node, data)
     node.trigger('update', data)
-    render_document(node.expressions, node)
+    render_document(node, node.expressions, node)
     node.ui.original_widget = generate_widget(node.document.children().eq(0))
+    node.ui._invalidate()
+    connect_signals(node, node.expressions, node)
     node.trigger('updated')
 
 def mount_node(node):
