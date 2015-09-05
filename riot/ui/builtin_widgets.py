@@ -4,7 +4,7 @@ import json
 import urwid
 import inspect
 from functools import wraps
-from riot.multimethods import MultiMethod, method
+from riot.multimethods import MultiMethod, method, Default
 
 def boolean_filter(value):
     if value in ('off', 'False', 'None', '', None):
@@ -67,6 +67,12 @@ def generate_widget(document):
     attr_args['allow_tab'] = boolean_filter(attr_args.get('allow_tab'))
     if 'edit_pos' in attr_args:
         attr_args['edit_pos'] = int(attr_args['edit_pos'])
+    return widget_class(**attr_args)
+
+@method('button')
+@cache_widget
+def generate_widget(document):
+    widget_class, attr_args = generate_general_widget(document)
     return widget_class(**attr_args)
 
 @method('check-box')
@@ -159,7 +165,9 @@ def generate_widget(document):
 @cache_widget
 def generate_widget(document):
     widget_class, attr_args = generate_general_widget(document)
-    widgets = [generate_widget(child) for child in document.children()]
+    widgets = []
+    children = document.children()
+    children.each(lambda index: widgets.append(generate_widget(children.eq(index))))
     walker = urwid.SimpleListWalker(widgets)
     attr_args['body'] = walker
     return widget_class(**attr_args)
@@ -169,5 +177,11 @@ def generate_widget(document):
 def generate_widget(document):
     widget_class, attr_args = generate_general_widget(document)
     attr_args['focus_item'] = int(attr_args.get('focus_item') or 0)
-    attr_args['widget_list'] = [generate_widget(child) for child in document.children()]
+    attr_args['widget_list'] = []
+    children = document.children()
+    children.each(lambda index: attr_args['widget_list'].append(generate_widget(children.eq(index))))
     return widget_class(**attr_args)
+
+@method(Default)
+def generate_widget(document):
+    raise Exception('Not implement: %s' % document)
